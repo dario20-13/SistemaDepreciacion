@@ -22,14 +22,14 @@
   position: relative;
   overflow: hidden;
 
-  border-right: 15px solid #94191d;
+  border-right: 10px solid #94191d;
   border-bottom-right-radius: 10px;
   border-top-right-radius: 10px;
-  border-left: 15px solid #94191d;
+  border-left: 10px solid #94191d;
   border-bottom-left-radius: 10px;
   border-top-left-radius: 10px;
-  border-bottom: 15px solid #94191d;
-  border-top:15px solid #94191d;
+  border-bottom: 10px solid #94191d;
+  border-top:10px solid #94191d;
   
 }
 
