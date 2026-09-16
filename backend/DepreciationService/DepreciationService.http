@@ -1,0 +1,6 @@
+@DepreciationService_HostAddress = http://localhost:5045
+
+GET {{DepreciationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
