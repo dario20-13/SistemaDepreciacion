@@ -13,198 +13,151 @@ function App() {
 
     console.log('Usuario:', usuario)
     console.log('Recordarme:', recordarme)
-
   }
 
   return (
     <div className="login-page">
 
-      {/* PANEL IZQUIERDO */}
-      <section className="brand-panel">
+      {/* DECORACIÓN SUPERIOR IZQUIERDA */}
+      <div className="decoration decoration-top-left"></div>
 
-        <div className="brand-header">
-        
+      {/* DECORACIÓN INFERIOR DERECHA */}
+      <div className="decoration decoration-bottom-right"></div>
+
+      {/* MARCA DE AGUA */}
+      <div className="watermark">
+        <img src={logoFisei} alt="" />
+      </div>
+
+      {/* TARJETA DE LOGIN */}
+      <section className="login-card">
+
+        <div className="login-header">
+
           <img
             src={logoFisei}
-            alt="Logo de la Facultad"
-            className="logo-fisei"
+            alt="Logo FISEI"
+            className="login-logo"
           />
+
+          <h2>FACULTAD DE INGENIERÍA EN SISTEMAS,</h2>
+          <h2>ELECTRÓNICA E INDUSTRIAL</h2>
+
+          <div className="separator">
+            <span></span>
+            <b>◆</b>
+            <span></span>
+          </div>
+
+          <h1>Iniciar Sesión</h1>
+
+          <p>
+            Accede al sistema con tus credenciales
+          </p>
+
         </div>
 
-        <div className="brand-content">
+        <form onSubmit={handleLogin}>
 
-  <div className="faculty-title">
-    <h2>FACULTAD DE INGENIERÍA EN</h2>
-    <h1>SISTEMAS, ELECTRÓNICA</h1>
-    <h1>E INDUSTRIAL</h1>
-  </div>
+          {/* USUARIO */}
+          <div className="form-group">
 
-  <div className="faculty-separator">
-    <span></span>
-    <b>◆</b>
-    <span></span>
-  </div>
+            <label htmlFor="usuario">
+              Usuario
+            </label>
 
-  <h2 className="system-title">
-    Sistema de Gestión de
-    <br />
-    Depreciación de Activos
-  </h2>
+            <div className="input-container">
 
-  <p className="system-description">
-    Controla, registra y calcula la depreciación
-    <br />
-    de los activos de tu organización.
-  </p>
+              <span className="input-icon">
+                ♙
+              </span>
 
-  </div>
-      </section>
+              <input
+                id="usuario"
+                type="text"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                placeholder="usuario@ejemplo.com"
+                required
+              />
 
-
-      {/* PANEL DERECHO */}
-      <section className="login-panel">
-
-        <div className="login-card">
-
-          <div className="login-header">
-
-            <img
-              src={logoFisei}
-              alt="Logo FISEI"
-              className="login-logo"
-            />
-
-            <h2>FACULTAD DE INGENIERÍA EN SISTEMAS,</h2>
-            <h2>ELECTRÓNICA E INDUSTRIAL</h2>
-
-            <div className="separator">
-              <span></span>
-              <b>•</b>
-              <span></span>
             </div>
-
-            <h1>Iniciar Sesión</h1>
-
-            <p>
-              Accede al sistema con tus credenciales
-            </p>
 
           </div>
 
+          {/* CONTRASEÑA */}
+          <div className="form-group">
 
-          <form onSubmit={handleLogin}>
+            <label htmlFor="password">
+              Contraseña
+            </label>
 
-            {/* USUARIO */}
-            <div className="form-group">
+            <div className="input-container">
 
-              <label htmlFor="usuario">
-                Usuario
-              </label>
+              <span className="input-icon">
+                ♧
+              </span>
 
-              <div className="input-container">
-
-                <span className="input-icon">
-                  ♙
-                </span>
-
-                <input
-                  id="usuario"
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="Ingrese su usuario"
-                  required
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* CONTRASEÑA */}
-            <div className="form-group">
-
-              <label htmlFor="password">
-                Contraseña
-              </label>
-
-              <div className="input-container">
-
-                <span className="input-icon">
-                  ♧
-                </span>
-
-                <input
-                  id="password"
-                  type={mostrarPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Ingrese su contraseña"
-                  required
-                />
-
-                <button
-                  type="button"
-                  className="password-button"
-                  onClick={() => setMostrarPassword(!mostrarPassword)}
-                  aria-label="Mostrar contraseña"
-                >
-                  {mostrarPassword ? '◉' : '◌'}
-                </button>
-
-              </div>
-
-            </div>
-
-
-            {/* OPCIONES */}
-            <div className="login-options">
-
-              <label className="remember">
-
-                <input
-                  type="checkbox"
-                  checked={recordarme}
-                  onChange={(e) => setRecordarme(e.target.checked)}
-                />
-
-                <span>Recordarme</span>
-
-              </label>
+              <input
+                id="password"
+                type={mostrarPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingrese su contraseña"
+                required
+              />
 
               <button
                 type="button"
-                className="forgot-password"
+                className="password-button"
+                onClick={() =>
+                  setMostrarPassword(!mostrarPassword)
+                }
+                aria-label="Mostrar contraseña"
               >
-                ¿Olvidó su contraseña?
+                {mostrarPassword ? '◉' : '◌'}
               </button>
 
             </div>
 
+          </div>
 
-            {/* BOTÓN */}
+          {/* OPCIONES */}
+          <div className="login-options">
+
+            <label className="remember">
+
+              <input
+                type="checkbox"
+                checked={recordarme}
+                onChange={(e) =>
+                  setRecordarme(e.target.checked)
+                }
+              />
+
+              <span>Recordarme</span>
+
+            </label>
+
             <button
-              type="submit"
-              className="login-button"
+              type="button"
+              className="forgot-password"
             >
-              <span>INGRESAR</span>
-              <span className="arrow">→</span>
+              ¿Olvidó su contraseña?
             </button>
 
-          </form>
+          </div>
 
-        </div>
+          {/* BOTÓN */}
+          <button
+            type="submit"
+            className="login-button"
+          >
+            <span>Ingresar</span>
+            <span className="arrow">→</span>
+          </button>
 
-
-        {/* FOOTER */}
-        <footer className="login-footer">
-
-          <p>
-            © 2026 Facultad de Ingeniería en Sistemas,
-            Electrónica e Industrial
-          </p>
-
-        </footer>
+        </form>
 
       </section>
 
