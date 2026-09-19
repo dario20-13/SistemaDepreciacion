@@ -469,4 +469,41 @@
     height: 54px;
     font-size: 16px;
   }
+
+  .login-error {
+  margin: 15px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #fdeaea;
+  color: #94191d;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #e5bcbc;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.register-option {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+
+.register-button {
+  border: none;
+  background: transparent;
+  color: #94191d;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 14px;
+}
+
+.register-button:hover {
+  text-decoration: underline;
+}
 }
