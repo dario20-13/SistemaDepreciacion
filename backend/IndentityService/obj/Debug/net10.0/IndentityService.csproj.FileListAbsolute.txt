@@ -168,3 +168,4 @@ C:\Proyectos\SistemaDepreciacion\backend\IndentityService\bin\Debug\net10.0\runt
 C:\Proyectos\SistemaDepreciacion\backend\IndentityService\bin\Debug\net10.0\runtimes\win-arm64\native\msalruntime_arm64.dll
 C:\Proyectos\SistemaDepreciacion\backend\IndentityService\bin\Debug\net10.0\runtimes\win-x64\native\msalruntime.dll
 C:\Proyectos\SistemaDepreciacion\backend\IndentityService\bin\Debug\net10.0\runtimes\win-x86\native\msalruntime_x86.dll
+C:\Proyectos\SistemaDepreciacion\backend\IndentityService\obj\Debug\net10.0\IndentityService.sourcelink.json

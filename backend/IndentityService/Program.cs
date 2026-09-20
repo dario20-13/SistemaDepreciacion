@@ -15,7 +15,9 @@ builder.Services.AddDbContext<IdentityDbContext>(
     options =>
         options.UseSqlServer(
             builder.Configuration
-                .GetConnectionString("DefaultConnection")
+                .GetConnectionString(
+                    "DefaultConnection"
+                )
         )
 );
 
@@ -32,6 +34,18 @@ var jwtKey =
         "No se encontró la clave JWT."
     );
 
+var jwtIssuer =
+    builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException(
+        "No se encontró el issuer JWT."
+    );
+
+var jwtAudience =
+    builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException(
+        "No se encontró el audience JWT."
+    );
+
 builder.Services
     .AddAuthentication(
         JwtBearerDefaults.AuthenticationScheme
@@ -46,22 +60,24 @@ builder.Services
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
 
-                ValidIssuer =
-                    builder.Configuration["Jwt:Issuer"],
-
-                ValidAudience =
-                    builder.Configuration["Jwt:Audience"],
+                ValidIssuer = jwtIssuer,
+                ValidAudience = jwtAudience,
 
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtKey)
-                    )
+                        Encoding.UTF8.GetBytes(
+                            jwtKey
+                        )
+                    ),
+
+                ClockSkew = TimeSpan.Zero
             };
     });
 
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();

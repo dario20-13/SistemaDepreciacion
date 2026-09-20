@@ -22,8 +22,15 @@ public class JwtService
                 "No se encontró la clave JWT."
             );
 
-        var issuer = _configuration["Jwt:Issuer"];
-        var audience = _configuration["Jwt:Audience"];
+        var issuer = _configuration["Jwt:Issuer"]
+            ?? throw new InvalidOperationException(
+                "No se encontró el issuer JWT."
+            );
+
+        var audience = _configuration["Jwt:Audience"]
+            ?? throw new InvalidOperationException(
+                "No se encontró el audience JWT."
+            );
 
         var expirationMinutes =
             int.Parse(
@@ -32,22 +39,19 @@ public class JwtService
 
         var claims = new List<Claim>
         {
-            new Claim(
+            new(
                 ClaimTypes.NameIdentifier,
                 usuario.Id.ToString()
             ),
-
-            new Claim(
+            new(
                 ClaimTypes.Name,
                 usuario.Nombre
             ),
-
-            new Claim(
+            new(
                 ClaimTypes.Email,
                 usuario.Email
             ),
-
-            new Claim(
+            new(
                 ClaimTypes.Role,
                 usuario.Rol
             )
@@ -64,15 +68,17 @@ public class JwtService
                 SecurityAlgorithms.HmacSha256
             );
 
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                expirationMinutes
-            ),
-            signingCredentials: credentials
-        );
+        var token =
+            new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires:
+                    DateTime.UtcNow.AddMinutes(
+                        expirationMinutes
+                    ),
+                signingCredentials: credentials
+            );
 
         return new JwtSecurityTokenHandler()
             .WriteToken(token);

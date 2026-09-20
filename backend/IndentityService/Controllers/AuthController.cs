@@ -50,7 +50,8 @@ public class AuthController : ControllerBase
             );
         }
 
-        var email = request.Email.Trim().ToLower();
+        var email =
+            request.Email.Trim().ToLowerInvariant();
 
         var existe =
             await _context.Usuarios
@@ -83,7 +84,8 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            mensaje = "Usuario registrado correctamente.",
+            mensaje =
+                "Usuario registrado correctamente.",
             usuario.Id,
             usuario.Nombre,
             usuario.Email,
@@ -95,7 +97,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request)
     {
-        var email = request.Email.Trim().ToLower();
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(
+                "Correo y contraseña son obligatorios."
+            );
+        }
+
+        var email =
+            request.Email.Trim().ToLowerInvariant();
 
         var usuario =
             await _context.Usuarios
