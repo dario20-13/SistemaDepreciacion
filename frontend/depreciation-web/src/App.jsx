@@ -273,8 +273,7 @@ function App() {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(11)
     doc.setTextColor(148, 25, 29)
-    doc.text('FACULTAD DE INGENIERÍA EN SISTEMAS,', 34, 15)
-    doc.text('ELECTRÓNICA E INDUSTRIAL', 34, 20)
+
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
@@ -545,11 +544,11 @@ function App() {
             <div>
 
               <div className="sidebar-title">
-                Facultad de Ingeniería en Sistemas, Electrónica e Industrial
+                Sistema de Depreciación
               </div>
 
               <div className="sidebar-subtitle">
-                Depreciación de Activos
+                 de Activos
               </div>
 
             </div>
@@ -1497,11 +1496,11 @@ function App() {
           />
 
           <h2>
-            FACULTAD DE INGENIERÍA EN SISTEMAS,
+            SISTEMA DE DEPRECIACIÓN 
           </h2>
 
           <h2>
-            ELECTRÓNICA E INDUSTRIAL
+            DE ACTIVOS
           </h2>
 
           <div className="separator">
@@ -1622,35 +1621,7 @@ function App() {
 
             </div>
 
-            <div className="login-options">
-
-              <label className="remember">
-
-                <input
-                  type="checkbox"
-                  checked={recordarme}
-                  onChange={(e) =>
-                    setRecordarme(
-                      e.target.checked
-                    )
-                  }
-                />
-
-                <span>
-                  Recordarme
-                </span>
-
-              </label>
-
-              <button
-                type="button"
-                className="forgot-password"
-              >
-                ¿Olvidó su contraseña?
-              </button>
-
-            </div>
-
+            
             <button
               type="submit"
               className="login-button"
@@ -1669,6 +1640,20 @@ function App() {
 
             </button>
 
+            <div className="register-link">
+              ¿No tienes una cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setError('')
+                  setMensajeExito('')
+                  setVista('register')
+                }}
+              >
+                Crear cuenta
+              </button>
+            </div>
+
           </form>
 
         ) : (
@@ -1682,10 +1667,6 @@ function App() {
               </label>
 
               <div className="input-container">
-
-                <span className="input-icon">
-                  👤
-                </span>
 
                 <input
                   id="regNombre"
@@ -1783,6 +1764,20 @@ function App() {
               </span>
 
             </button>
+
+            <div className="register-link">
+              ¿Ya tienes una cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setError('')
+                  setMensajeExito('')
+                  setVista('login')
+                }}
+              >
+                Iniciar sesión
+              </button>
+            </div>
 
           </form>
 
