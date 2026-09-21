@@ -11,6 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// Permitir peticiones desde el frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173", "http://localhost:5175")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddDbContext<IdentityDbContext>(
     options =>
         options.UseSqlServer(
@@ -88,7 +100,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// 👉 AQUÍ ESTÁ LA LÍNEA QUE FALTABA:
+app.UseCors("ReactPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

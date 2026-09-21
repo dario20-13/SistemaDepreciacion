@@ -324,6 +324,7 @@ public class ActivosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+<<<<<<< HEAD
     public async Task<IActionResult> Delete(
         int id)
     {
@@ -368,5 +369,55 @@ public class ActivosController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
+=======
+public async Task<IActionResult> Delete(
+    int id)
+{
+    if (!TryGetUsuarioId(out var usuarioId))
+    {
+        return Unauthorized(
+            "No se pudo identificar al usuario."
+        );
+>>>>>>> origin/feature/frontend
     }
+
+    var activo =
+        await _context.Activos
+            .FirstOrDefaultAsync(
+                a =>
+                    a.Id == id &&
+                    a.UsuarioId == usuarioId
+            );
+
+    if (activo == null)
+    {
+        return NotFound(
+            "Activo no encontrado."
+        );
+    }
+
+    // Buscar las depreciaciones relacionadas con el activo
+    var depreciaciones =
+        await _context.Depreciaciones
+            .Where(
+                d =>
+                    d.ActivoId == id
+            )
+            .ToListAsync();
+
+    // Eliminar primero las depreciaciones
+    if (depreciaciones.Any())
+    {
+        _context.Depreciaciones.RemoveRange(
+            depreciaciones
+        );
+    }
+
+    // Eliminar el activo
+    _context.Activos.Remove(activo);
+
+    await _context.SaveChangesAsync();
+
+    return NoContent();
+}
 }

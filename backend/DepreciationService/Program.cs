@@ -15,6 +15,21 @@ var builder =
 
 builder.Services.AddControllers();
 
+<<<<<<< HEAD
+=======
+// CORS para permitir la comunicación con React
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+>>>>>>> origin/feature/frontend
 builder.Services.AddDbContext<
     DepreciationDbContext
 >(
@@ -158,6 +173,12 @@ if (
 
 app.UseHttpsRedirection();
 
+<<<<<<< HEAD
+=======
+// CORS debe ejecutarse antes de Authentication y Authorization
+app.UseCors("ReactPolicy");
+
+>>>>>>> origin/feature/frontend
 app.UseAuthentication();
 
 app.UseAuthorization();
