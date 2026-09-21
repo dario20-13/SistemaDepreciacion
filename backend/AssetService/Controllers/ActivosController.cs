@@ -1,12 +1,15 @@
 using AssetService.Data;
 using AssetService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace AssetService.Controllers;
 
 [ApiController]
 [Route("api/activos")]
+[Authorize]
 public class ActivosController : ControllerBase
 {
     private readonly AssetDbContext _context;
@@ -17,12 +20,56 @@ public class ActivosController : ControllerBase
         _context = context;
     }
 
+    private bool TryGetUsuarioId(
+        out int usuarioId)
+    {
+        var claim =
+            User.FindFirst(
+                ClaimTypes.NameIdentifier
+            )?.Value;
+
+        return int.TryParse(
+            claim,
+            out usuarioId
+        );
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        if (!TryGetUsuarioId(out var usuarioId))
+        {
+            return Unauthorized(
+                "No se pudo identificar al usuario."
+            );
+        }
+
         var activos =
             await _context.Activos
-                .Include(a => a.Categoria)
+                .Where(
+                    a =>
+                        a.UsuarioId == usuarioId
+                )
+                .Select(a => new ActivoResponse
+                {
+                    Id = a.Id,
+                    UsuarioId = a.UsuarioId,
+                    CategoriaId = a.CategoriaId,
+                    Nombre = a.Nombre,
+                    CostoAdquisicion =
+                        a.CostoAdquisicion,
+                    FechaCompra =
+                        a.FechaCompra,
+                    FechaCreacion =
+                        a.FechaCreacion,
+                    Categoria =
+                        a.Categoria!.Nombre,
+                    VidaUtilMeses =
+                        a.Categoria!.VidaUtilMeses,
+                    ValorResidualPorcentaje =
+                        a.Categoria!
+                            .ValorResidualPorcentaje
+                })
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -30,13 +77,46 @@ public class ActivosController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(
+        int id)
     {
+        if (!TryGetUsuarioId(out var usuarioId))
+        {
+            return Unauthorized(
+                "No se pudo identificar al usuario."
+            );
+        }
+
         var activo =
             await _context.Activos
-                .Include(a => a.Categoria)
+                .Where(
+                    a =>
+                        a.Id == id &&
+                        a.UsuarioId == usuarioId
+                )
+                .Select(a => new ActivoResponse
+                {
+                    Id = a.Id,
+                    UsuarioId = a.UsuarioId,
+                    CategoriaId =
+                        a.CategoriaId,
+                    Nombre = a.Nombre,
+                    CostoAdquisicion =
+                        a.CostoAdquisicion,
+                    FechaCompra =
+                        a.FechaCompra,
+                    FechaCreacion =
+                        a.FechaCreacion,
+                    Categoria =
+                        a.Categoria!.Nombre,
+                    VidaUtilMeses =
+                        a.Categoria!.VidaUtilMeses,
+                    ValorResidualPorcentaje =
+                        a.Categoria!
+                            .ValorResidualPorcentaje
+                })
                 .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == id);
+                .FirstOrDefaultAsync();
 
         if (activo == null)
         {
@@ -50,25 +130,44 @@ public class ActivosController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> Create(
-        [FromBody] Activo activo)
+        [FromBody] CreateActivoRequest request)
     {
-        if (string.IsNullOrWhiteSpace(activo.Nombre))
+        if (!TryGetUsuarioId(out var usuarioId))
+        {
+            return Unauthorized(
+                "No se pudo identificar al usuario."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            request.Nombre))
         {
             return BadRequest(
                 "El nombre del activo es obligatorio."
             );
         }
 
-        if (activo.CostoAdquisicion <= 0)
+        if (request.CostoAdquisicion <= 0)
         {
             return BadRequest(
                 "El costo debe ser mayor que cero."
             );
         }
 
+        if (request.FechaCompra == default)
+        {
+            return BadRequest(
+                "La fecha de compra es obligatoria."
+            );
+        }
+
         var categoria =
             await _context.Categorias
-                .FindAsync(activo.CategoriaId);
+                .FirstOrDefaultAsync(
+                    c =>
+                        c.Id ==
+                        request.CategoriaId
+                );
 
         if (categoria == null)
         {
@@ -77,7 +176,23 @@ public class ActivosController : ControllerBase
             );
         }
 
-        activo.FechaCreacion = DateTime.Now;
+        var activo = new Activo
+        {
+            UsuarioId = usuarioId,
+            CategoriaId =
+                request.CategoriaId,
+            Nombre =
+                request.Nombre.Trim(),
+            CostoAdquisicion =
+                Math.Round(
+                    request.CostoAdquisicion,
+                    2
+                ),
+            FechaCompra =
+                request.FechaCompra.Date,
+            FechaCreacion =
+                DateTime.Now
+        };
 
         _context.Activos.Add(activo);
 
@@ -86,17 +201,38 @@ public class ActivosController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { id = activo.Id },
-            activo
+            new
+            {
+                activo.Id,
+                activo.UsuarioId,
+                activo.CategoriaId,
+                activo.Nombre,
+                activo.CostoAdquisicion,
+                activo.FechaCompra,
+                activo.FechaCreacion
+            }
         );
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(
         int id,
-        [FromBody] Activo activo)
+        [FromBody] UpdateActivoRequest request)
     {
+        if (!TryGetUsuarioId(out var usuarioId))
+        {
+            return Unauthorized(
+                "No se pudo identificar al usuario."
+            );
+        }
+
         var existente =
-            await _context.Activos.FindAsync(id);
+            await _context.Activos
+                .FirstOrDefaultAsync(
+                    a =>
+                        a.Id == id &&
+                        a.UsuarioId == usuarioId
+                );
 
         if (existente == null)
         {
@@ -105,9 +241,49 @@ public class ActivosController : ControllerBase
             );
         }
 
+        var tieneDepreciacion =
+            await _context.Depreciaciones
+                .AnyAsync(
+                    d =>
+                        d.ActivoId == id
+                );
+
+        if (tieneDepreciacion)
+        {
+            return Conflict(
+                "El activo ya tiene una depreciación generada y no puede ser modificado."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            request.Nombre))
+        {
+            return BadRequest(
+                "El nombre del activo es obligatorio."
+            );
+        }
+
+        if (request.CostoAdquisicion <= 0)
+        {
+            return BadRequest(
+                "El costo debe ser mayor que cero."
+            );
+        }
+
+        if (request.FechaCompra == default)
+        {
+            return BadRequest(
+                "La fecha de compra es obligatoria."
+            );
+        }
+
         var categoria =
             await _context.Categorias
-                .FindAsync(activo.CategoriaId);
+                .FirstOrDefaultAsync(
+                    c =>
+                        c.Id ==
+                        request.CategoriaId
+                );
 
         if (categoria == null)
         {
@@ -117,39 +293,84 @@ public class ActivosController : ControllerBase
         }
 
         existente.Nombre =
-            activo.Nombre;
+            request.Nombre.Trim();
 
         existente.CategoriaId =
-            activo.CategoriaId;
+            request.CategoriaId;
 
         existente.CostoAdquisicion =
-            activo.CostoAdquisicion;
+            Math.Round(
+                request.CostoAdquisicion,
+                2
+            );
 
         existente.FechaCompra =
-            activo.FechaCompra;
+            request.FechaCompra.Date;
 
         await _context.SaveChangesAsync();
 
-        return Ok(existente);
+        return Ok(new
+        {
+            mensaje =
+                "Activo actualizado correctamente.",
+            existente.Id,
+            existente.UsuarioId,
+            existente.CategoriaId,
+            existente.Nombre,
+            existente.CostoAdquisicion,
+            existente.FechaCompra,
+            existente.FechaCreacion
+        });
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+public async Task<IActionResult> Delete(
+    int id)
+{
+    if (!TryGetUsuarioId(out var usuarioId))
     {
-        var activo =
-            await _context.Activos.FindAsync(id);
-
-        if (activo == null)
-        {
-            return NotFound(
-                "Activo no encontrado."
-            );
-        }
-
-        _context.Activos.Remove(activo);
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        return Unauthorized(
+            "No se pudo identificar al usuario."
+        );
     }
+
+    var activo =
+        await _context.Activos
+            .FirstOrDefaultAsync(
+                a =>
+                    a.Id == id &&
+                    a.UsuarioId == usuarioId
+            );
+
+    if (activo == null)
+    {
+        return NotFound(
+            "Activo no encontrado."
+        );
+    }
+
+    // Buscar las depreciaciones relacionadas con el activo
+    var depreciaciones =
+        await _context.Depreciaciones
+            .Where(
+                d =>
+                    d.ActivoId == id
+            )
+            .ToListAsync();
+
+    // Eliminar primero las depreciaciones
+    if (depreciaciones.Any())
+    {
+        _context.Depreciaciones.RemoveRange(
+            depreciaciones
+        );
+    }
+
+    // Eliminar el activo
+    _context.Activos.Remove(activo);
+
+    await _context.SaveChangesAsync();
+
+    return NoContent();
+}
 }

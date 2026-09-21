@@ -4,24 +4,96 @@ namespace DepreciationService.Services;
 
 public class DepreciationCalculator
 {
+    public int CalculateCompleteMonths(
+        DateTime fechaCompra,
+        DateTime fechaHasta)
+    {
+        fechaCompra = fechaCompra.Date;
+        fechaHasta = fechaHasta.Date;
+
+        if (fechaHasta < fechaCompra)
+        {
+            throw new ArgumentException(
+                "La fecha hasta no puede ser anterior a la fecha de compra."
+            );
+        }
+
+        var meses =
+            (
+                fechaHasta.Year -
+                fechaCompra.Year
+            ) * 12
+            +
+            (
+                fechaHasta.Month -
+                fechaCompra.Month
+            );
+
+        if (
+            fechaCompra
+                .AddMonths(meses)
+                .Date > fechaHasta
+        )
+        {
+            meses--;
+        }
+
+        return Math.Max(meses, 0);
+    }
+
     public List<DepreciationResult> Calculate(
         decimal costo,
         DateTime fechaCompra,
         int vidaUtilMeses,
-        decimal porcentajeResidual)
+        decimal porcentajeResidual,
+        int periodosSolicitados)
     {
-        decimal valorResidual =
+        if (costo <= 0)
+        {
+            throw new ArgumentException(
+                "El costo debe ser mayor que cero."
+            );
+        }
+
+        if (vidaUtilMeses <= 0)
+        {
+            throw new ArgumentException(
+                "La vida útil debe ser mayor que cero."
+            );
+        }
+
+        if (porcentajeResidual != 10)
+        {
+            throw new ArgumentException(
+                "El valor residual debe ser exactamente 10%."
+            );
+        }
+
+        if (periodosSolicitados < 0)
+        {
+            throw new ArgumentException(
+                "El número de períodos no puede ser negativo."
+            );
+        }
+
+        var valorResidual =
             Math.Round(
-                costo * porcentajeResidual / 100m,
+                costo *
+                porcentajeResidual /
+                100m,
                 2
             );
 
-        decimal valorDepreciable =
-            costo - valorResidual;
-
-        decimal depreciacionMensual =
+        var valorDepreciable =
             Math.Round(
-                valorDepreciable / vidaUtilMeses,
+                costo - valorResidual,
+                2
+            );
+
+        var depreciacionMensual =
+            Math.Round(
+                valorDepreciable /
+                vidaUtilMeses,
                 2
             );
 
@@ -31,60 +103,81 @@ public class DepreciationCalculator
         decimal acumulada = 0m;
 
         for (
-            int mes = 1;
-            mes <= vidaUtilMeses;
-            mes++
+            int periodo = 1;
+            periodo <= periodosSolicitados;
+            periodo++
         )
         {
-            decimal depreciacionPeriodo =
-                depreciacionMensual;
+            decimal depreciacionPeriodo;
 
-            if (mes == vidaUtilMeses)
+            if (periodo > vidaUtilMeses)
+            {
+                depreciacionPeriodo = 0m;
+            }
+            else if (periodo == vidaUtilMeses)
             {
                 depreciacionPeriodo =
-                    valorDepreciable - acumulada;
+                    valorDepreciable -
+                    acumulada;
+            }
+            else
+            {
+                depreciacionPeriodo =
+                    depreciacionMensual;
             }
 
-            acumulada += depreciacionPeriodo;
+            depreciacionPeriodo =
+                Math.Round(
+                    depreciacionPeriodo,
+                    2
+                );
+
+            if (depreciacionPeriodo < 0)
+            {
+                depreciacionPeriodo = 0m;
+            }
+
+            acumulada +=
+                depreciacionPeriodo;
+
+            acumulada =
+                Math.Round(
+                    acumulada,
+                    2
+                );
 
             if (acumulada > valorDepreciable)
             {
-                acumulada = valorDepreciable;
+                acumulada =
+                    valorDepreciable;
             }
 
-            decimal valorLibros =
-                costo - acumulada;
+            var valorLibros =
+                Math.Round(
+                    costo - acumulada,
+                    2
+                );
 
             if (valorLibros < valorResidual)
             {
-                valorLibros = valorResidual;
+                valorLibros =
+                    valorResidual;
             }
 
             resultados.Add(
                 new DepreciationResult
                 {
-                    Periodo = mes,
-
+                    Periodo = periodo,
                     Fecha =
-                        fechaCompra.AddMonths(mes),
-
+                        fechaCompra
+                            .Date
+                            .AddMonths(periodo),
                     VD =
-                        Math.Round(
-                            depreciacionPeriodo,
-                            2
-                        ),
-
+                        depreciacionPeriodo,
                     UDA =
-                        Math.Round(
-                            acumulada,
-                            2
-                        ),
-
+                        acumulada,
                     VR =
-                        Math.Round(
-                            valorLibros,
-                            2
-                        )
+                        valorLibros
                 }
             );
         }

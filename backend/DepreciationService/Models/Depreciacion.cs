@@ -1,8 +1,10 @@
 namespace DepreciationService.Models;
 
-public class DepreciationResult
+public class Depreciacion
 {
-    public int Periodo { get; set; }
+    public int Id { get; set; }
+    public int ActivoId { get; set; }
+    public int NumeroPeriodo { get; set; }
     public DateTime Fecha { get; set; }
     public decimal VD { get; set; }
     public decimal UDA { get; set; }
