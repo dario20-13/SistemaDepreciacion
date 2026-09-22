@@ -1,6 +1,5 @@
 **/bin/
 **/obj/
-<<<<<<< HEAD
 
 .vs/
 *.user
@@ -19,6 +18,3 @@ Thumbs.db
 .DS_Store
 
 secrets.json
-=======
-node_modules/
->>>>>>> origin/feature/frontend

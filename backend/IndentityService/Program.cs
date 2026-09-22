@@ -1,6 +1,6 @@
-using IdentityService.Data;
-using IdentityService.Models;
-using IdentityService.Services;
+using IdentityService.Aplicacion.Servicios;
+using IdentityService.Dominio.Entidades;
+using IdentityService.Estructura.Persistencia;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -100,7 +100,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// 👉 AQUÍ ESTÁ LA LÍNEA QUE FALTABA:
+
 app.UseCors("ReactPolicy");
 
 app.UseAuthentication();

@@ -1,26 +1,21 @@
-using DepreciationService.Data;
-using DepreciationService.Services;
+using DepreciationService.Aplicacion.Servicios;
+using DepreciationService.Estructura.Persistencia;
+using DepreciationService.Estructura.ServiciosExternos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using QuestPDF.Infrastructure;
 using System.Text;
 
-QuestPDF.Settings.License =
-    LicenseType.Community;
-
-var builder =
-    WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-<<<<<<< HEAD
-=======
-// CORS para permitir la comunicación con React
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("ReactPolicy", policy =>
+    options.AddPolicy("FrontendPolicy", policy =>
     {
         policy
             .WithOrigins("http://localhost:5173")
@@ -29,158 +24,69 @@ builder.Services.AddCors(options =>
     });
 });
 
->>>>>>> origin/feature/frontend
-builder.Services.AddDbContext<
-    DepreciationDbContext
->(
-    options =>
-        options.UseSqlServer(
-            builder.Configuration
-                .GetConnectionString(
-                    "DefaultConnection"
-                )
-        )
-);
-
-builder.Services.AddScoped<
-    DepreciationCalculator
->();
-
-builder.Services.AddHttpClient<
-    AssetServiceClient
->(
-    client =>
-    {
-        client.BaseAddress =
-            new Uri(
-                "http://localhost:5005/"
-            );
-    }
-);
-
-var jwtKey =
-    builder.Configuration["Jwt:Key"]
+var assetServiceBaseUrl =
+    builder.Configuration["AssetService:BaseUrl"]
     ?? throw new InvalidOperationException(
-        "No se encontró la clave JWT."
+        "No se encontró AssetService:BaseUrl en la configuración"
     );
 
-var jwtIssuer =
-    builder.Configuration["Jwt:Issuer"]
+builder.Services.AddHttpClient<AssetServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(assetServiceBaseUrl);
+});
+
+builder.Services.AddScoped<DepreciationCalculator>();
+
+builder.Services.AddHttpClient<AssetServiceClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5005/");
+});
+
+var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException(
-        "No se encontró el issuer JWT."
+        "No se encontró Jwt:Key en appsettings.json"
     );
 
-var jwtAudience =
-    builder.Configuration["Jwt:Audience"]
-    ?? throw new InvalidOperationException(
-        "No se encontró el audience JWT."
-    );
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services
-    .AddAuthentication(
-        JwtBearerDefaults.AuthenticationScheme
-    )
-    .AddJwtBearer(
-        options =>
-        {
-            options.TokenValidationParameters =
-                new TokenValidationParameters
-                {
-                    ValidateIssuer =
-                        true,
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
 
-                    ValidateAudience =
-                        true,
+                ValidIssuer = jwtIssuer,
+                ValidAudience = jwtAudience,
 
-                    ValidateLifetime =
-                        true,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtKey)
+                    ),
 
-                    ValidateIssuerSigningKey =
-                        true,
-
-                    ValidIssuer =
-                        jwtIssuer,
-
-                    ValidAudience =
-                        jwtAudience,
-
-                    IssuerSigningKey =
-                        new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(
-                                jwtKey
-                            )
-                        ),
-
-                    ClockSkew =
-                        TimeSpan.Zero
-                };
-        }
-    );
+                ClockSkew = TimeSpan.Zero
+            };
+    });
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddEndpointsApiExplorer();
+var app = builder.Build();
 
-builder.Services.AddSwaggerGen(
-    options =>
-    {
-        options.AddSecurityDefinition(
-            "Bearer",
-            new OpenApiSecurityScheme
-            {
-                Name =
-                    "Authorization",
-
-                Type =
-                    SecuritySchemeType.Http,
-
-                Scheme =
-                    "bearer",
-
-                BearerFormat =
-                    "JWT",
-
-                Description =
-                    "Ingrese el token JWT sin comillas."
-            }
-        );
-
-        options.AddSecurityRequirement(
-            document =>
-                new OpenApiSecurityRequirement
-                {
-                    [
-                        new OpenApiSecuritySchemeReference(
-                            "Bearer",
-                            document
-                        )
-                    ] = []
-                }
-        );
-    }
-);
-
-var app =
-    builder.Build();
-
-if (
-    app.Environment.IsDevelopment()
-)
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("FrontendPolicy");
 
-<<<<<<< HEAD
-=======
-// CORS debe ejecutarse antes de Authentication y Authorization
-app.UseCors("ReactPolicy");
-
->>>>>>> origin/feature/frontend
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();

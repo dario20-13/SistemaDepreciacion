@@ -1,4 +1,4 @@
-using AssetService.Data;
+using AssetService.Estructura.Persistencia;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;

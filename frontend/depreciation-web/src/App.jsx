@@ -3,8 +3,7 @@ import axios from 'axios'
 import './App.css'
 import logoFisei from './assets/logo_Fisei.png'
 import CalculadoraDepreciacion from './CalculadoraDepreciacion'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { descargarPdfActivo } from './generarPdfDepreciacion'
 
 function App() {
   const [vista, setVista] = useState('login')
@@ -49,7 +48,7 @@ function App() {
         const token = localStorage.getItem('token')
 
         const respuesta = await axios.get(
-          'http://localhost:5005/api/activos',
+          'http://localhost:5000/api/activos',
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -86,7 +85,7 @@ function App() {
 
     try {
       const respuesta = await axios.post(
-        'http://localhost:5028/api/auth/login',
+        'http://localhost:5000/api/auth/login',
         {
           email: usuario,
           password: password
@@ -116,7 +115,7 @@ function App() {
 
     try {
       await axios.post(
-        'http://localhost:5028/api/auth/register',
+        'http://localhost:5000/api/auth/register',
         {
           nombre: regNombre,
           email: regEmail,
@@ -152,11 +151,16 @@ function App() {
   }
 
   const verDetalleActivo = async (activoId) => {
-    try {
-      const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
+    if (!token) {
+      alert('No existe una sesión activa')
+      return
+    }
+
+    try {
       const respuesta = await axios.get(
-        `http://localhost:5045/api/depreciacion/activo/${activoId}`,
+        `http://localhost:5000/api/depreciacion/activo/${activoId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -170,6 +174,20 @@ function App() {
         'Error al consultar la depreciación:',
         error.response?.data || error.message
       )
+
+      if (error.response?.status === 401) {
+        alert('La sesión ha expirado. Inicie sesión nuevamente.')
+        return
+      }
+
+      if (error.response?.status === 404) {
+        alert(
+          'Este activo todavía no tiene información de depreciación.'
+        )
+        return
+      }
+
+      alert('No se pudo consultar el detalle del activo.')
     }
   }
 
@@ -191,7 +209,7 @@ function App() {
       const token = localStorage.getItem('token')
 
       await axios.delete(
-        `http://localhost:5005/api/activos/${activoId}`,
+        `http://localhost:5000/api/activos/${activoId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -234,282 +252,38 @@ function App() {
   }
 
   // Generador de PDF con diseño institucional FISEI
-  const emitirPdfDeActivo = (activo) => {
-    if (!activo) return
+  const emitirPdfDeActivo = async (activo, fechaHasta = null) => {
+    if (!activo) {
+      alert('Seleccione un activo')
+      return
+    }
 
-    const doc = new jsPDF('p', 'mm', 'a4')
-
-    // Cálculos contables normativos
-    const vrPorcentaje = 0.10
-    const vr = Math.round(activo.costo * vrPorcentaje * 100) / 100
-    const vd = Math.round((activo.costo - vr) * 100) / 100
-    const vidaMeses = activo.vidaMeses || 36
-    const depMensual = vd / vidaMeses
-    const depAnual = depMensual * 12
-
-    const [anioStr, mesStr, diaStr] = (activo.fechaCompra || '2025-01-01').split('-')
-    const anioCompra = parseInt(anioStr)
-    const mesCompra = parseInt(mesStr) || 1
-    const diaCompra = diaStr ? diaStr.slice(0, 2) : '01'
-
-    // Fecha actual formateada (DD/MM/AAAA)
-    const fechaHoy = new Date()
-    const fechaEmisionStr = `${String(fechaHoy.getDate()).padStart(2, '0')}/${String(
-      fechaHoy.getMonth() + 1
-    ).padStart(2, '0')}/${fechaHoy.getFullYear()}`
-
-    // 1. Franja superior guinda
-    doc.setFillColor(148, 25, 29)
-    doc.rect(0, 0, 210, 5, 'F')
-
-    // 2. Logo institucional y Encabezado
     try {
-      doc.addImage(logoFisei, 'PNG', 14, 10, 16, 16)
-    } catch (e) {
-      doc.setFillColor(148, 25, 29)
-      doc.rect(14, 10, 16, 16, 'F')
-    }
+      await descargarPdfActivo(
+        axios,
+        activo,
+        fechaHasta
+      )
+    } catch (error) {
+      console.error(
+        'Error al generar el PDF:',
+        error.response?.data || error.message
+      )
 
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(148, 25, 29)
-
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8.5)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Sistema de Depreciación de Activos · Normativa Ecuatoriana', 34, 25)
-
-    doc.setDrawColor(225, 225, 225)
-    doc.setLineWidth(0.3)
-    doc.line(14, 30, 196, 30)
-
-    // 3. Banner FICHA INDIVIDUAL DE DEPRECIACIÓN
-    doc.setFillColor(148, 25, 29)
-    doc.roundedRect(14, 34, 182, 9, 1.5, 1.5, 'F')
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10.5)
-    doc.setTextColor(255, 255, 255)
-    doc.text('FICHA INDIVIDUAL DE DEPRECIACIÓN', 105, 40, { align: 'center' })
-
-    // 4. Tarjeta del Activo Principal
-    doc.setFillColor(254, 248, 248)
-    doc.roundedRect(14, 47, 182, 23, 2, 2, 'F')
-    doc.setFillColor(148, 25, 29)
-    doc.rect(14, 47, 2.5, 23, 'F')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.setTextColor(148, 25, 29)
-    const subtituloCategoria = `${(activo.categoriaNombre || 'EQUIPO').toUpperCase()} · ${(
-      vidaMeses / 12
-    ).toFixed(0)} AÑOS DE DEPRECIACIÓN`
-    doc.text(subtituloCategoria, 20, 53)
-
-    doc.setFontSize(14)
-    doc.setTextColor(30, 30, 30)
-    doc.text(activo.nombre || 'Activo Fijo', 20, 60)
-
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(100, 100, 100)
-    doc.text('Fecha de compra: ', 20, 66)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(20, 20, 20)
-    doc.text(`${diaCompra}/${mesStr}/${anioCompra}`, 44, 66)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(100, 100, 100)
-    doc.text('Ficha N°: ', 85, 66)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(20, 20, 20)
-    doc.text(`ACT-${String(activo.id || 1).padStart(3, '0')}`, 98, 66)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(100, 100, 100)
-    doc.text('Emitido: ', 140, 66)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(20, 20, 20)
-    doc.text(fechaEmisionStr, 152, 66)
-
-    // 5. SECCIÓN 1: DATOS DEL ACTIVO
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9.5)
-    doc.setTextColor(148, 25, 29)
-    doc.text('1. DATOS DEL ACTIVO', 14, 76)
-
-    const drawParamBox = (x, y, w, h, label, val, isWine = false) => {
-      doc.setFillColor(252, 252, 253)
-      doc.setDrawColor(230, 230, 230)
-      doc.setLineWidth(0.3)
-      doc.roundedRect(x, y, w, h, 2, 2, 'FD')
-
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(7)
-      doc.setTextColor(130, 130, 130)
-      doc.text(label.toUpperCase(), x + 4, y + 4.5)
-
-      doc.setFontSize(11)
-      if (isWine) {
-        doc.setTextColor(148, 25, 29)
-      } else {
-        doc.setTextColor(20, 20, 20)
+      if (error.response?.status === 401) {
+        alert('La sesión ha expirado. Inicie sesión nuevamente.')
+        return
       }
-      doc.text(val, x + 4, y + 10.5)
-    }
 
-    const colW = 89
-    const rowH = 13
-    drawParamBox(14, 80, colW, rowH, 'Valor de Compra', `$${activo.costo.toFixed(2)}`)
-    drawParamBox(107, 80, colW, rowH, 'Valor Residual (10%)', `$${vr.toFixed(2)}`)
-
-    drawParamBox(14, 95, colW, rowH, 'Valor a Depreciar', `$${vd.toFixed(2)}`)
-    drawParamBox(107, 95, colW, rowH, 'Depreciación Anual', `$${depAnual.toFixed(2)}`, true)
-
-    drawParamBox(14, 110, colW, rowH, 'Depreciación Mensual', `$${depMensual.toFixed(2)}`, true)
-    drawParamBox(107, 110, colW, rowH, 'Vida Útil', `${vidaMeses} meses`, true)
-
-    // 6. SECCIÓN 2: TABLA DE DEPRECIACIÓN ANUAL
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9.5)
-    doc.setTextColor(148, 25, 29)
-    doc.text('2. TABLA DE DEPRECIACIÓN ANUAL', 14, 130)
-
-    const tableRows = []
-    let cursorAnio = anioCompra
-    let vdaActual = 0
-    let saldoLibros = activo.costo
-
-    tableRows.push([
-      `${diaCompra}/${mesStr}/${cursorAnio}`,
-      '$0.00',
-      '$0.00',
-      `$${saldoLibros.toFixed(2)}`
-    ])
-
-    const totalAnios = Math.ceil(vidaMeses / 12)
-
-    for (let anio = 1; anio <= totalAnios; anio++) {
-      cursorAnio++
-      const depDelPeriodo = anio === totalAnios ? vd - vdaActual : depAnual
-      vdaActual += depDelPeriodo
-      saldoLibros = Math.max(vr, activo.costo - vdaActual)
-
-      tableRows.push([
-        `${diaCompra}/${mesStr}/${cursorAnio}`,
-        `$${depDelPeriodo.toFixed(2)}`,
-        `$${vdaActual.toFixed(2)}`,
-        `$${saldoLibros.toFixed(2)}`
-      ])
-    }
-
-    autoTable(doc, {
-      startY: 134,
-      head: [['FECHA', 'DEPRECIACIÓN DEL AÑO', 'DEPRECIACIÓN ACUMULADA', 'VALOR EN LIBROS']],
-      body: tableRows,
-      theme: 'plain',
-      styles: {
-        fontSize: 8.5,
-        cellPadding: 2.8,
-        lineColor: [235, 235, 235],
-        lineWidth: 0.2
-      },
-      headStyles: {
-        fillColor: [148, 25, 29],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center'
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'right' },
-        2: { halign: 'right', fontStyle: 'bold', textColor: [148, 25, 29] },
-        3: { halign: 'right' }
+      if (error.response?.status === 404) {
+        alert(
+          'No existen datos de depreciación para este activo.'
+        )
+        return
       }
-    })
 
-    // 7. SECCIÓN 3: ESTADO ACTUAL DEL ACTIVO
-    const finalY = doc.lastAutoTable.finalY + 8
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9.5)
-    doc.setTextColor(148, 25, 29)
-    doc.text('3. ESTADO ACTUAL DEL ACTIVO', 14, finalY)
-
-    // Cálculo dinámico de meses transcurridos a la fecha actual
-    const fechaInicio = new Date(anioCompra, mesCompra - 1, parseInt(diaCompra))
-    let mesesTranscurridos =
-      (fechaHoy.getFullYear() - fechaInicio.getFullYear()) * 12 +
-      (fechaHoy.getMonth() - fechaInicio.getMonth())
-
-    mesesTranscurridos = Math.max(0, Math.min(vidaMeses, mesesTranscurridos))
-    const porcentajeProgreso = Math.min(100, Math.round((mesesTranscurridos / vidaMeses) * 100))
-    const vdaHoy = Math.min(vd, Math.round(mesesTranscurridos * depMensual * 100) / 100)
-    const saldoHoy = Math.max(vr, Math.round((activo.costo - vdaHoy) * 100) / 100)
-
-    const boxY = finalY + 4
-    doc.setFillColor(254, 250, 250)
-    doc.setDrawColor(240, 220, 220)
-    doc.setLineWidth(0.3)
-    doc.roundedRect(14, boxY, 182, 38, 2, 2, 'FD')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8.5)
-    doc.setTextColor(148, 25, 29)
-    doc.text(`RESUMEN A LA FECHA: ${fechaEmisionStr}`, 20, boxY + 7)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(110, 110, 110)
-    doc.text('Meses depreciados', 20, boxY + 13)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(20, 20, 20)
-    doc.text(`${mesesTranscurridos} / ${vidaMeses}`, 20, boxY + 19)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(110, 110, 110)
-    doc.text('Depreciación acumulada', 95, boxY + 13)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(148, 25, 29)
-    doc.text(`$${vdaHoy.toFixed(2)}`, 95, boxY + 19)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(110, 110, 110)
-    doc.text('Valor actual en libros', 20, boxY + 25)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(22, 130, 60)
-    doc.text(`$${saldoHoy.toFixed(2)}`, 20, boxY + 31)
-
-    // Barra de Progreso
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(110, 110, 110)
-    doc.text('Progreso de depreciación', 20, boxY + 36)
-
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(20, 20, 20)
-    doc.text(`${porcentajeProgreso}%`, 188, boxY + 36, { align: 'right' })
-
-    const barX = 20
-    const barY = boxY + 38
-    const barW = 168
-    const barH = 2.5
-
-    doc.setFillColor(235, 235, 235)
-    doc.roundedRect(barX, barY, barW, barH, 1, 1, 'F')
-
-    if (porcentajeProgreso > 0) {
-      doc.setFillColor(148, 25, 29)
-      const fillW = Math.max(3, (barW * porcentajeProgreso) / 100)
-      doc.roundedRect(barX, barY, fillW, barH, 1, 1, 'F')
+      alert('No se pudo generar el reporte PDF.')
     }
-
-    doc.save(`Ficha_${(activo.nombre || 'Activo').replace(/\s+/g, '_')}.pdf`)
   }
 
   // DASHBOARD AUTENTICADO
@@ -1496,7 +1270,7 @@ function App() {
           />
 
           <h2>
-            SISTEMA DE DEPRECIACIÓN 
+            SISTEMA DE DEPRECIACIÓN
           </h2>
 
           <h2>
@@ -1621,7 +1395,7 @@ function App() {
 
             </div>
 
-            
+
             <button
               type="submit"
               className="login-button"
