@@ -1,28 +1,24 @@
+using System.Text;
 using DepreciationService.Aplicacion.Servicios;
 using DepreciationService.Estructura.Persistencia;
 using DepreciationService.Estructura.ServiciosExternos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("FrontendPolicy", policy =>
-    {
-        policy
-            .WithOrigins("http://localhost:5173")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
+builder.Services.AddDbContext<DepreciationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
+builder.Services.AddScoped<DepreciationCalculator>();
 
 var assetServiceBaseUrl =
     builder.Configuration["AssetService:BaseUrl"]
@@ -35,43 +31,35 @@ builder.Services.AddHttpClient<AssetServiceClient>(client =>
     client.BaseAddress = new Uri(assetServiceBaseUrl);
 });
 
-builder.Services.AddScoped<DepreciationCalculator>();
-
-builder.Services.AddHttpClient<AssetServiceClient>(client =>
-{
-    client.BaseAddress = new Uri("http://localhost:5005/");
-});
-
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException(
-        "No se encontró Jwt:Key en appsettings.json"
-    );
+    ?? throw new InvalidOperationException("No se encontró Jwt:Key");
 
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("No se encontró Jwt:Issuer");
+
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException("No se encontró Jwt:Audience");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
 
-                ValidIssuer = jwtIssuer,
-                ValidAudience = jwtAudience,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
 
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtKey)
-                    ),
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey)
+            ),
 
-                ClockSkew = TimeSpan.Zero
-            };
+            ClockSkew = TimeSpan.Zero
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -83,8 +71,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

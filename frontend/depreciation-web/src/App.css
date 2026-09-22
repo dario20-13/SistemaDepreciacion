@@ -285,23 +285,35 @@
 
 .register-option {
   margin-top: 22px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   color: #666;
 }
 
 .register-button {
   border: none;
+  outline: none;
   background: transparent;
+  padding: 0;
+  margin: 0;
   color: #94191d;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  margin-left: 5px;
-  font-size: 14px;
+  transition: color 0.2s ease;
 }
 
 .register-button:hover {
+  color: #781316;
   text-decoration: underline;
+}
+
+.register-button:focus {
+  outline: none;
 }
 
 /* =========================================

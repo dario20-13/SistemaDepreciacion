@@ -1414,14 +1414,15 @@ function App() {
 
             </button>
 
-            <div className="register-link">
-              ¿No tienes una cuenta?{' '}
+           <div className="register-option">
+              ¿No tienes una cuenta?
               <button
                 type="button"
+                className="register-button"
                 onClick={() => {
+                  setVista('registro')
                   setError('')
                   setMensajeExito('')
-                  setVista('register')
                 }}
               >
                 Crear cuenta
